@@ -3575,8 +3575,8 @@ static void mdy_brightness_set_lpm_level(gint level)
 
 static void mdy_brightness_set_on_level(gint hbm_and_level)
 {
-    gint new_brightness = (hbm_and_level >> 0) & 0xff;
-    gint new_hbm_level  = (hbm_and_level >> 8) & 0xff;
+    gint new_brightness = hbm_and_level;
+    gint new_hbm_level  = hbm_and_level == 100;
 
     mce_log(LL_INFO, "hbm_level=%d, brightness=%d",
             new_hbm_level, new_brightness);
@@ -5325,12 +5325,29 @@ static gboolean mdy_display_type_get_from_config(display_type_t *display_type)
     gchar    **vdir = 0;
     gchar    **vset = 0;
     gchar    **vmax = 0;
+    gchar    **hbmdir = 0;
     gsize      nset = 0;
     gsize      nmax = 0;
 
     /* First check if we have a configured brightness directory
      * that a) exists and b) contains both brightness and
      * max_brightness files */
+
+    hbmdir = mce_conf_get_string_list(MCE_CONF_DISPLAY_GROUP,
+                                    MCE_CONF_HBM_CONTROL_PATH, 0);
+
+    if( hbmdir ) {
+        for( size_t i = 0; hbmdir[i]; ++i ) {
+            if( !*hbmdir[i] || g_access(hbmdir[i], F_OK) )
+                continue;
+
+            mdy_high_brightness_mode_output.path = g_strdup(hbmdir[i]);
+            mdy_high_brightness_mode_supported = TRUE;
+
+            break;
+        }
+    }
+
 
     vdir = mce_conf_get_string_list(MCE_CONF_DISPLAY_GROUP,
                                     MCE_CONF_BACKLIGHT_DIRECTORY, 0);
